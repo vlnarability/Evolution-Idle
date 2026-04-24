@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+
+server.out.log
+server.err.log
+
+tmp_clickthrough.png
+tmp_clickthrough_after.png
+
+review_extract/
+
+.DS_Store
+Thumbs.db
