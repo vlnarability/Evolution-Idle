@@ -15,3 +15,4 @@ Then open:
 ## Deploy
 
 This project is set up to work as a static site on GitHub Pages.
+You can access it directly, here: https://vlnarability.github.io/Evolution-Idle/
