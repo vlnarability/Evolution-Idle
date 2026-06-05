@@ -413,7 +413,7 @@
   };
   L.resourceFailureSources=function(){
     const timers=state.game.run.resourceFailures||{}, out=[];
-    if((timers.wood||0)>0){
+    if((timers.wood||0)>=60){
       out.push({id:"wood_shortage",name:"Wood Shortage",path:"Resource Failure",effects:{resourceOutput:{production:-0.18,lumber:-0.25}}});
     }
     return out;
@@ -549,7 +549,7 @@
     const seen=state.game.meta.seenContent||(state.game.meta.seenContent={});
     seen[kind+":"+item.id]={kind:kind,id:item.id,name:item.name,stage:L.currentStage().id,time:Date.now()};
   };
-  L.goalKey=function(goal){ return L.currentStage().id+":"+goal.id; };
+  L.goalKey=function(goal){ return (goal.stage || L.currentStage().id) + ":" + goal.id; };
   L.activeEffectSources=function(){
     const spec=L.specializationDef();
     const specSource=spec?[{id:"specialization:"+spec.id,name:spec.name,path:"Specialization",effects:spec.effects||{}}]:[];
@@ -1583,7 +1583,7 @@
         return;
       }
     }
-    const popGain=L.sumScalarEffect("populationGrowth")*dt*Math.max(0.4,L.populationScaleMultiplier());
+    const popGain=L.sumScalarEffect("populationGrowth")*dt;
     if(popGain>0 && (state.game.run.resources.food||0)>0 && (state.game.run.resources.water||0)>0) state.game.run.population+=popGain;
     if(L.currentStage().id==="cell") state.game.run.population+=0.001*dt*L.ownedSystemsForStage().length;
   };
