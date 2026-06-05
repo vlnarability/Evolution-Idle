@@ -10,7 +10,7 @@
       systemsCategory:"",
       automationCategory:"",
       techCategory:"",
-      debug:true,
+      debug:false,
       compact:false,
       optionsOpen:false,
       betweenRuns:false,
