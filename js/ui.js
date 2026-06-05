@@ -117,13 +117,16 @@
   }
 
   UI.bindUI=function(){
-    const debugToggle = byId("debug-toggle");
     document.querySelectorAll(".tab").forEach(function(btn){ btn.onclick=function(){ state.ui.tab=btn.dataset.tab; UI.render(); }; });
     byId("ascend-btn").onclick=function(){ if(Logic.evolve()) UI.render(); };
     byId("rebirth-btn").onclick=function(){ if(Logic.rebirth()) UI.render(); };
     byId("save-btn").onclick=function(){ State.saveGame(); };
     byId("reset-btn").onclick=function(){ State.hardReset(); UI.render(); };
     byId("options-btn").onclick=function(){ state.ui.optionsOpen=!state.ui.optionsOpen; UI.render(); };
+
+    const debugRow = byId("debug-toggle").closest(".debug-option");
+    const debugToggle = byId("debug-toggle");
+    
     const unlocked =
     state.ui.debugUnlocked ||
     localStorage.getItem("evolve_debug") === "1";
@@ -132,9 +135,9 @@
 
       state.ui.debugUnlocked = true;
 
-      debugToggle.hidden = false;
-      debugToggle.disabled = false;
+      debugRow.style.display = "";
 
+      debugToggle.disabled = false;
       debugToggle.checked = !!state.ui.debug;
 
       debugToggle.onchange = function(e){
@@ -146,12 +149,13 @@
 
       state.ui.debug = false;
 
-      debugToggle.hidden = true;
-      debugToggle.disabled = true;
-      debugToggle.checked = false;
+      debugRow.style.display = "none";
 
+      debugToggle.checked = false;
+      debugToggle.disabled = true;
       debugToggle.onchange = null;
     }
+    
     byId("compact-toggle").onchange=function(e){ state.ui.compact=!!e.target.checked; UI.render(); };
     byId("pause-btn").onclick=function(){ state.running=!state.running; UI.render(); };
     byId("speed-btn").onclick=function(){ state.speedIndex=(state.speedIndex+1)%DATA.SPEEDS.length; UI.render(); };
