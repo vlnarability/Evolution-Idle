@@ -10,6 +10,6 @@
     if(now-lastRender>=250 && !state.ui.inputActive){ lastRender=now; UI.render(); }
     requestAnimationFrame(frame);
   }
-  function start(){ State.loadGame(); UI.bindUI(); UI.render(); setInterval(function(){ State.saveGame(); },5000); requestAnimationFrame(frame); }
+  function start(){ State.loadGame(); UI.bindUI(); window.addEventListener("beforeunload", function(){ State.saveGame(); }); document.addEventListener("visibilitychange", function(){ if(document.hidden) State.saveGame(); });UI.render(); setInterval(function(){ State.saveGame(); },5000); requestAnimationFrame(frame); }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();
