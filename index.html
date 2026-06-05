@@ -98,10 +98,17 @@
     <button class="hidden" id="focus-restore-btn">Open Attention</button>
     <div class="options-panel hidden" id="options-panel">
       <div class="label">Options</div>
-      <label class="check-row"><input type="checkbox" id="debug-toggle" checked /> Enable debug tools</label>
       <label class="check-row"><input type="checkbox" id="compact-toggle" /> Compact card spacing</label>
       <div class="inline-actions debug-actions"><button id="pause-btn">Pause</button><button id="speed-btn">Speed x1</button></div>
-      <div class="tiny">When debug is on, anything can be bought or evolved without the normal requirements.</div>
+      <div class="option-row debug-option">
+        <label class="check-row">
+          <input type="checkbox" id="debug-toggle" checked />
+          Enable debug tools
+        </label>
+        <div class="tiny">
+          When debug is on, anything can be bought or evolved without the normal requirements.
+        </div>
+      </div>
     </div>
   </footer>
 
