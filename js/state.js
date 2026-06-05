@@ -261,8 +261,6 @@
     M.state.ui.tab="actions";
     M.state.ui.betweenRuns=false;
     M.state.ui.betweenRunsStep="review";
-
-    UI.render();
   };
 
   window.EvolutionState = M;
