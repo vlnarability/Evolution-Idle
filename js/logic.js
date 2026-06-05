@@ -1578,6 +1578,7 @@
         state.game.meta.lastRunReview=L.buildRunReview("Collapse",0,{failure:"Starvation",failureResource:(state.game.run.resourceFailures.food||0)>=60?"food":"water"});
         state.ui.betweenRuns=true;
         state.ui.betweenRunsStep="review";
+        UI.render();
         state.game.run=State.createRun(state.game.meta);
         state.game.run.log.push("Run collapsed due to prolonged shortage.");
         return;
@@ -1766,6 +1767,7 @@
       state.game.run=State.createRun(state.game.meta);
       state.ui.betweenRuns=true;
       state.ui.betweenRunsStep="review";
+      UI.render();
       state.game.run.log.push(victoryName+" achieved. "+epAward+" Evolution Points awarded"+(legacy&&legacy.epMult!==1?(" with "+legacy.name+" x"+legacy.epMult):"")+(objectiveAward?(" including "+objectiveAward+" from path objectives"):"")+(newlyUnlocked.length?(". New unlocks: "+newlyUnlocked.map(function(item){ return item.name; }).join(", ")):"")+".");
       return true;
     }
@@ -1855,7 +1857,7 @@
     return state.ui.debug || state.game.run.time>=45 || state.game.run.stageIndex>=1;
   };
   L.rebirthGain=function(){ if(!L.canRebirth()) return 0; const scorePart=L.currentScore()/Math.max(1,L.currentStage().scoreTarget); return Math.max(1,Math.floor(state.game.run.stageIndex*3+scorePart*4+Math.log10(1+state.game.run.population))); };
-  L.rebirth=function(){ if(!L.canRebirth()) return false; const gainValue=L.rebirthGain(); state.game.meta.lastRunReview=L.buildRunReview("Rebirth",gainValue); L.completeMasteryChallenges(L.currentStage().id,state.game.meta.lastRunReview); state.game.meta.evolutionPoints+=gainValue; state.game.run=State.createRun(state.game.meta); state.ui.betweenRuns=true; state.ui.betweenRunsStep="review"; state.game.run.log.push("Rebirth awarded "+gainValue+" Evolution Points."); return true; };
+  L.rebirth=function(){ if(!L.canRebirth()) return false; const gainValue=L.rebirthGain(); state.game.meta.lastRunReview=L.buildRunReview("Rebirth",gainValue); L.completeMasteryChallenges(L.currentStage().id,state.game.meta.lastRunReview); state.game.meta.evolutionPoints+=gainValue; state.game.run=State.createRun(state.game.meta); state.ui.betweenRuns=true; state.ui.betweenRunsStep="review"; UI.render(); state.game.run.log.push("Rebirth awarded "+gainValue+" Evolution Points."); return true; };
   L.buyUpgrade=function(id){ const def=DATA.SHOP_UPGRADES.find(function(item){ return item.id===id; }); if(!def) return false; if(def.requiresWin && state.game.meta.galacticWins<(def.minWins||1) && !state.ui.debug) return false; const level=L.upgradeLevel(id); if(level>=def.max) return false; const cost=def.base+level*def.base; if(state.game.meta.evolutionPoints<cost && !state.ui.debug) return false; if(!state.ui.debug) state.game.meta.evolutionPoints-=cost; state.game.meta.upgrades[id]=level+1; return true; };
   L.hasAutomationControls=function(){ return L.upgradeLevel("auto_organelles")>0 || L.upgradeLevel("auto_generators")>0; };
 
