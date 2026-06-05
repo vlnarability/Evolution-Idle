@@ -136,7 +136,87 @@
       state.ui.betweenRunsStep="review";
       UI.render();
     };
-    byId("archive-search").oninput=function(event){ state.ui.archiveSearch=event.target.value||""; UI.render(); };
+    byId("archive-search").oninput=function(event){ state.ui.archiveSearch=event.target.value||""; UI.renderArchive(); };
+  };
+
+  UI.renderArchive=function(){
+    const archiveList=byId("archive-list"); archiveList.innerHTML="";
+    const archiveFilterBar=byId("archive-filter-bar"); archiveFilterBar.innerHTML="";
+    const input = byId("archive-search");
+    
+    if (document.activeElement !== input) {
+      input.value = state.ui.archiveSearch || "";
+    }
+    
+    ["all","timeline","eras","chronicles","museum","rivals","seen"].forEach(function(id){
+      const btn=document.createElement("button");
+      btn.textContent={all:"All",timeline:"Timeline",eras:"Eras",chronicles:"Chronicles",museum:"Museum",rivals:"Rivals",seen:"Seen"}[id];
+      btn.className=state.ui.archiveFilter===id?"tab active":"tab";
+      btn.onclick=function(){ state.ui.archiveFilter=id; UI.render(); };
+      archiveFilterBar.appendChild(btn);
+    });
+    const codexForMuseum=Logic.codexSummary();
+    const archiveSearch=(state.ui.archiveSearch||"").trim().toLowerCase();
+    function archiveMatches(text){
+      return !archiveSearch || (text||"").toLowerCase().indexOf(archiveSearch)>=0;
+    }
+    function pushArchiveCard(title,badgeText,badgeKind,detail,effectsText){
+      const haystack=[title,badgeText,detail,effectsText].filter(Boolean).join(" ");
+      if(!archiveMatches(haystack)) return;
+      const card=document.createElement("div");
+      card.className="mini-card";
+      const favoriteKey=(title+"|"+badgeText).replace(/"/g,"");
+      card.innerHTML='<div class="name-row"><span>'+title+'</span><span>'+badge(badgeText,badgeKind)+(Logic.upgradeLevel("archive_pinning")>0||state.ui.debug?(" "+badge(Logic.isArchiveFavorite("archive",favoriteKey)?"Favorite":"Pin","available")):"")+'</span></div><div class="tiny">'+detail+'</div>'+(effectsText?'<div class="effects">'+effectsText+'</div>':'');
+      if(Logic.upgradeLevel("archive_pinning")>0 || state.ui.debug){
+        card.appendChild(cardButton(Logic.isArchiveFavorite("archive",favoriteKey)?"Unfavorite":"Favorite",false,"Pin or unpin this archive entry.",function(){ if(Logic.toggleArchiveFavorite("archive",favoriteKey)) UI.render(); }));
+      }
+      archiveList.appendChild(card);
+    }
+    if(state.ui.archiveFilter==="timeline"){
+      const timelineEntries=[].concat(
+        (codexForMuseum.victories||[]).map(function(entry){ return {time:entry.time,title:entry.name,kind:"Victory",detail:"Path "+(entry.ascensionPath||"none")+" | Archetype "+Logic.archetypeName(entry.archetype)}; }),
+        (codexForMuseum.chronicles||[]).map(function(entry){ return {time:entry.time,title:entry.name,kind:"Chronicle",detail:entry.text}; }),
+        Object.values(state.game.meta.seenContent||{}).map(function(entry){ return {time:entry.time,title:entry.name,kind:entry.kind,detail:"Seen in "+entry.stage}; })
+      ).sort(function(a,b){ return (b.time||0)-(a.time||0); });
+      timelineEntries.forEach(function(entry){ pushArchiveCard(entry.title,entry.kind,"owned",entry.detail); });
+      (codexForMuseum.timelineMilestones||[]).forEach(function(milestone){
+        pushArchiveCard(milestone.name,"Timeline Milestone","owned",milestone.desc,effectSourceText(milestone));
+      });
+    }
+    if(state.ui.archiveFilter==="eras"){
+      const eras={};
+      Object.values(state.game.meta.seenContent||{}).forEach(function(entry){
+        if(!eras[entry.stage]) eras[entry.stage]=[];
+        eras[entry.stage].push(entry);
+      });
+      Object.entries(eras).forEach(function(entry){
+        pushArchiveCard(entry[0].charAt(0).toUpperCase()+entry[0].slice(1)+" Era","Stage Group","owned",entry[1].length+" discovered records");
+      });
+    }
+    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="seen"){
+      if(!state.game.run.archive.length && state.ui.archiveFilter==="seen") archiveList.appendChild(emptyState("No retired stages yet."));
+      else [...state.game.run.archive].reverse().forEach(function(entry){
+        pushArchiveCard(entry.stageName,entry.archetype?Logic.displayArchetypeName(entry.archetype):"-","owned",((entry.systems&&entry.systems.join(", "))||"No systems recorded."));
+      });
+      Object.values(state.game.meta.seenContent||{}).slice(-80).reverse().forEach(function(entry){
+        pushArchiveCard(entry.name,entry.kind,"owned","Seen in "+entry.stage);
+      });
+    }
+    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="museum"){
+      (codexForMuseum.museum||[]).forEach(function(entry){
+        pushArchiveCard(entry.lastName,"Museum","owned",Logic.archetypeName(entry.archetype)+' | Path '+entry.path+' | Wins '+entry.count+' | Best objectives '+entry.bestObjectives);
+      });
+      (codexForMuseum.museumRewards||[]).forEach(function(reward){
+        pushArchiveCard(reward.name,"Museum Perk","owned","Unlocked by repeating an ending row "+reward.count+" times.",effectSourceText(reward));
+      });
+    }
+    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="chronicles") (codexForMuseum.chronicles||[]).forEach(function(entry){
+      pushArchiveCard(entry.name,Logic.archetypeName(entry.archetype),"owned",entry.text);
+    });
+    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="rivals") (codexForMuseum.rivalEndings||[]).forEach(function(entry){
+      pushArchiveCard(entry.name,"Rival","locked","Pressure ending recorded in the archive.");
+    });
+    if(!archiveList.children.length) archiveList.appendChild(emptyState("No archive entries match this filter."));
   };
 
   UI.render=function(){
@@ -1461,80 +1541,7 @@
     const traits=Logic.inheritedTraits();
     if(!traits.length) traitList.appendChild(emptyState("No inherited traits yet."));
     else traits.forEach(function(trait){ const card=document.createElement("div"); card.className="mini-card"; card.textContent=trait; traitList.appendChild(card); });
-
-    const archiveList=byId("archive-list"); archiveList.innerHTML="";
-    const archiveFilterBar=byId("archive-filter-bar"); archiveFilterBar.innerHTML="";
-    byId("archive-search").value=state.ui.archiveSearch||"";
-    ["all","timeline","eras","chronicles","museum","rivals","seen"].forEach(function(id){
-      const btn=document.createElement("button");
-      btn.textContent={all:"All",timeline:"Timeline",eras:"Eras",chronicles:"Chronicles",museum:"Museum",rivals:"Rivals",seen:"Seen"}[id];
-      btn.className=state.ui.archiveFilter===id?"tab active":"tab";
-      btn.onclick=function(){ state.ui.archiveFilter=id; UI.render(); };
-      archiveFilterBar.appendChild(btn);
-    });
-    const codexForMuseum=Logic.codexSummary();
-    const archiveSearch=(state.ui.archiveSearch||"").trim().toLowerCase();
-    function archiveMatches(text){
-      return !archiveSearch || (text||"").toLowerCase().indexOf(archiveSearch)>=0;
-    }
-    function pushArchiveCard(title,badgeText,badgeKind,detail,effectsText){
-      const haystack=[title,badgeText,detail,effectsText].filter(Boolean).join(" ");
-      if(!archiveMatches(haystack)) return;
-      const card=document.createElement("div");
-      card.className="mini-card";
-      const favoriteKey=(title+"|"+badgeText).replace(/"/g,"");
-      card.innerHTML='<div class="name-row"><span>'+title+'</span><span>'+badge(badgeText,badgeKind)+(Logic.upgradeLevel("archive_pinning")>0||state.ui.debug?(" "+badge(Logic.isArchiveFavorite("archive",favoriteKey)?"Favorite":"Pin","available")):"")+'</span></div><div class="tiny">'+detail+'</div>'+(effectsText?'<div class="effects">'+effectsText+'</div>':'');
-      if(Logic.upgradeLevel("archive_pinning")>0 || state.ui.debug){
-        card.appendChild(cardButton(Logic.isArchiveFavorite("archive",favoriteKey)?"Unfavorite":"Favorite",false,"Pin or unpin this archive entry.",function(){ if(Logic.toggleArchiveFavorite("archive",favoriteKey)) UI.render(); }));
-      }
-      archiveList.appendChild(card);
-    }
-    if(state.ui.archiveFilter==="timeline"){
-      const timelineEntries=[].concat(
-        (codexForMuseum.victories||[]).map(function(entry){ return {time:entry.time,title:entry.name,kind:"Victory",detail:"Path "+(entry.ascensionPath||"none")+" | Archetype "+Logic.archetypeName(entry.archetype)}; }),
-        (codexForMuseum.chronicles||[]).map(function(entry){ return {time:entry.time,title:entry.name,kind:"Chronicle",detail:entry.text}; }),
-        Object.values(state.game.meta.seenContent||{}).map(function(entry){ return {time:entry.time,title:entry.name,kind:entry.kind,detail:"Seen in "+entry.stage}; })
-      ).sort(function(a,b){ return (b.time||0)-(a.time||0); });
-      timelineEntries.forEach(function(entry){ pushArchiveCard(entry.title,entry.kind,"owned",entry.detail); });
-      (codexForMuseum.timelineMilestones||[]).forEach(function(milestone){
-        pushArchiveCard(milestone.name,"Timeline Milestone","owned",milestone.desc,effectSourceText(milestone));
-      });
-    }
-    if(state.ui.archiveFilter==="eras"){
-      const eras={};
-      Object.values(state.game.meta.seenContent||{}).forEach(function(entry){
-        if(!eras[entry.stage]) eras[entry.stage]=[];
-        eras[entry.stage].push(entry);
-      });
-      Object.entries(eras).forEach(function(entry){
-        pushArchiveCard(entry[0].charAt(0).toUpperCase()+entry[0].slice(1)+" Era","Stage Group","owned",entry[1].length+" discovered records");
-      });
-    }
-    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="seen"){
-      if(!state.game.run.archive.length && state.ui.archiveFilter==="seen") archiveList.appendChild(emptyState("No retired stages yet."));
-      else [...state.game.run.archive].reverse().forEach(function(entry){
-        pushArchiveCard(entry.stageName,entry.archetype?Logic.displayArchetypeName(entry.archetype):"-","owned",((entry.systems&&entry.systems.join(", "))||"No systems recorded."));
-      });
-      Object.values(state.game.meta.seenContent||{}).slice(-80).reverse().forEach(function(entry){
-        pushArchiveCard(entry.name,entry.kind,"owned","Seen in "+entry.stage);
-      });
-    }
-    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="museum"){
-      (codexForMuseum.museum||[]).forEach(function(entry){
-        pushArchiveCard(entry.lastName,"Museum","owned",Logic.archetypeName(entry.archetype)+' | Path '+entry.path+' | Wins '+entry.count+' | Best objectives '+entry.bestObjectives);
-      });
-      (codexForMuseum.museumRewards||[]).forEach(function(reward){
-        pushArchiveCard(reward.name,"Museum Perk","owned","Unlocked by repeating an ending row "+reward.count+" times.",effectSourceText(reward));
-      });
-    }
-    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="chronicles") (codexForMuseum.chronicles||[]).forEach(function(entry){
-      pushArchiveCard(entry.name,Logic.archetypeName(entry.archetype),"owned",entry.text);
-    });
-    if(state.ui.archiveFilter==="all" || state.ui.archiveFilter==="rivals") (codexForMuseum.rivalEndings||[]).forEach(function(entry){
-      pushArchiveCard(entry.name,"Rival","locked","Pressure ending recorded in the archive.");
-    });
-    if(!archiveList.children.length) archiveList.appendChild(emptyState("No archive entries match this filter."));
-
+    
     const log=byId("log"); log.innerHTML="";
     [...state.game.run.log].reverse().slice(0,60).forEach(function(line){ const entry=document.createElement("div"); entry.className="log-entry"; entry.textContent=line; log.appendChild(entry); });
     if(!log.children.length) log.appendChild(emptyState("No log entries."));
