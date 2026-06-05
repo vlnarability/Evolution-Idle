@@ -88,7 +88,7 @@
   M.createRun = function(meta){
     const resources=M.emptyResources();
     const capacities=M.emptyCapacities();
-    const warmStart=(meta.upgrades.start||0)*2;
+    const warmStart=(meta.upgrades.start||0)*5;
     resources.atp=5+warmStart;
     resources.happiness=75;
     return {
